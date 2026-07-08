@@ -120,3 +120,21 @@ def organization_verify(org_id):
     org.verified = True
     db.session.commit()
     return jsonify({"success": True})
+
+# admin-facing UI
+@organizations_bp.route("/admin/organizations")
+@admins_only
+def organizations_admin_list():
+    pending = Organizations.query.filter_by(verified=False).order_by(
+        Organizations.created_at.asc()
+    ).all()
+    return render_template("platform_plus/organizations_admin.html", pending=pending)
+
+@organizations_bp.route("/admin/organizations/<int:org_id>/reject", methods=["POST"])
+@admins_only
+def organization_reject(org_id):
+    org = Organizations.query.get_or_404(org_id)
+    OrganizationMembers.query.filter_by(organization_id=org.id).delete()
+    db.session.delete(org)
+    db.session.commit()
+    return jsonify({"success": True})
