@@ -20,16 +20,45 @@
   </tbody>
 </table>
 <script>
-function approveOrg(id) {
-  fetch(`/plugins/platform-plus/admin/organizations/${id}/verify`, {method: "POST"})
-    .then(r => r.json())
-    .then(d => { if (d.success) document.getElementById(`org-row-${id}`).remove(); });
+const CSRF_NONCE = "{{ session.nonce }}";
+
+function postJSON(url) {
+  return fetch(url, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "CSRF-Token": CSRF_NONCE,
+    },
+  }).then(async (r) => {
+    if (!r.ok) {
+      let detail = "";
+      try {
+        detail = (await r.json()).message || r.statusText;
+      } catch (e) {
+        detail = r.statusText;
+      }
+      throw new Error(`Request failed (${r.status}): ${detail}`);
+    }
+    return r.json();
+  });
 }
+
+function approveOrg(id) {
+  postJSON(`/plugins/platform-plus/admin/organizations/${id}/verify`)
+    .then((d) => {
+      if (d.success) document.getElementById(`org-row-${id}`).remove();
+    })
+    .catch((err) => alert(err.message));
+}
+
 function rejectOrg(id) {
   if (!confirm("Reject and delete this organization?")) return;
-  fetch(`/plugins/platform-plus/admin/organizations/${id}/reject`, {method: "POST"})
-    .then(r => r.json())
-    .then(d => { if (d.success) document.getElementById(`org-row-${id}`).remove(); });
+  postJSON(`/plugins/platform-plus/admin/organizations/${id}/reject`)
+    .then((d) => {
+      if (d.success) document.getElementById(`org-row-${id}`).remove();
+    })
+    .catch((err) => alert(err.message));
 }
 </script>
 {% endblock %}

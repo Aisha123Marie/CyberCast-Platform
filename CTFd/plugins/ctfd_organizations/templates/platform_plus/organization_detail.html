@@ -27,6 +27,25 @@
 {% if org.website %}<p><a href="{{ org.website }}" target="_blank" rel="noopener">{{ org.website }}</a></p>{% endif %}
 <p>{{ org.description }}</p>
 
+<h4 class="mt-4">Teams ({{ teams|length }})</h4>
+{% if teams %}
+<table class="table text-white">
+  <thead class="text-white-50"><tr><th>Name</th><th>Org Members</th><th>Total Members</th><th></th></tr></thead>
+  <tbody>
+    {% for entry in teams %}
+    <tr>
+      <td>{{ entry.team.name }}</td>
+      <td>{{ entry.org_member_count }}</td>
+      <td>{{ entry.team.members|length }}</td>
+      <td><a href="{{ url_for('teams.public', team_id=entry.team.id) }}" class="btn btn-outline-primary btn-sm">View</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No teams yet. Teams appear here once an organization member joins or creates a CTFd team.</p>
+{% endif %}
+
 <h4 class="mt-4">Members ({{ members|length }})</h4>
 <table class="table text-white">
   <thead class="text-white-50"><tr><th>Name</th><th>Role</th><th>Joined</th></tr></thead>
