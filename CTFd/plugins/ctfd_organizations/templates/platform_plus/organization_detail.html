@@ -1,4 +1,20 @@
 {% extends "platform_plus/_base.html" %}
+
+<style>
+  /* Forces all text elements inside the table to be bright and legible */
+  #organization-detail-table, 
+  #organization-detail-table th, 
+  #organization-detail-table td,
+  .table, .table th, .table td {
+    color: #e2e8f0 !important; /* Soft white/slate color */
+  }
+
+  /* Ensures user names stand out clearly */
+  .table td, .table th {
+    color: #ffffff !important;
+  }
+</style>
+
 {% block pp_content %}
 <div class="d-flex justify-content-between align-items-center">
   <h1>{{ org.name }} {% if org.verified %}<span class="badge badge-success">Verified</span>{% endif %}</h1>
@@ -12,8 +28,8 @@
 <p>{{ org.description }}</p>
 
 <h4 class="mt-4">Members ({{ members|length }})</h4>
-<table class="table">
-  <thead><tr><th>Name</th><th>Role</th><th>Joined</th></tr></thead>
+<table class="table text-white">
+  <thead class="text-white-50"><tr><th>Name</th><th>Role</th><th>Joined</th></tr></thead>
   <tbody>
     {% for membership, u in members %}
     <tr>
