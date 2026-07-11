@@ -32,7 +32,44 @@ def organizations_list():
     orgs = Organizations.query.order_by(
         Organizations.verified.desc(), Organizations.name.asc()
     ).all()
-    return render_template("platform_plus/organizations_list.html", organizations=orgs)
+
+    # Build per-org stats (members, teams, points) for cards + sidebar.
+    org_stats = {}
+    for org in orgs:
+        member_rows = (
+            db.session.query(OrganizationMembers, Users)
+            .join(Users, OrganizationMembers.user_id == Users.id)
+            .filter(OrganizationMembers.organization_id == org.id)
+            .all()
+        )
+        member_count = len(member_rows)
+        points = sum(user.get_score(admin=True) for _membership, user in member_rows)
+
+        org_stats[org.id] = {
+            "members": member_count,
+            # No link between Organizations and CTFd Teams yet, so this
+            # stays 0 until that relationship is added.
+            "teams": 0,
+            "points": points,
+        }
+
+    # Sidebar: top 3 organizations ranked by points (ties broken by name).
+    top_organizations = sorted(
+        orgs,
+        key=lambda o: (-org_stats[o.id]["points"], o.name.lower()),
+    )[:3]
+
+    platform_stats = {
+        "organizations": len(orgs),
+    }
+
+    return render_template(
+        "platform_plus/organizations_list.html",
+        organizations=orgs,
+        org_stats=org_stats,
+        top_organizations=top_organizations,
+        platform_stats=platform_stats,
+    )
 
 
 @organizations_bp.route("/organizations/new", methods=["GET", "POST"])
@@ -118,5 +155,23 @@ def organization_join(slug):
 def organization_verify(org_id):
     org = Organizations.query.get_or_404(org_id)
     org.verified = True
+    db.session.commit()
+    return jsonify({"success": True})
+
+# admin-facing UI
+@organizations_bp.route("/admin/organizations")
+@admins_only
+def organizations_admin_list():
+    pending = Organizations.query.filter_by(verified=False).order_by(
+        Organizations.created_at.asc()
+    ).all()
+    return render_template("platform_plus/organizations_admin.html", pending=pending)
+
+@organizations_bp.route("/admin/organizations/<int:org_id>/reject", methods=["POST"])
+@admins_only
+def organization_reject(org_id):
+    org = Organizations.query.get_or_404(org_id)
+    OrganizationMembers.query.filter_by(organization_id=org.id).delete()
+    db.session.delete(org)
     db.session.commit()
     return jsonify({"success": True})

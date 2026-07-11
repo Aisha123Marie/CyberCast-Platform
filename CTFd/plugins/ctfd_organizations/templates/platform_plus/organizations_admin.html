@@ -1,0 +1,35 @@
+{% extends "platform_plus/_base.html" %}
+{% block content %}
+<h1>Pending Organizations</h1>
+<table class="table">
+  <thead><tr><th>Name</th><th>Type</th><th>Website</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for org in pending %}
+    <tr id="org-row-{{ org.id }}">
+      <td>{{ org.name }}</td>
+      <td>{{ org.org_type }}</td>
+      <td>{{ org.website }}</td>
+      <td>
+        <button class="btn btn-success btn-sm" onclick="approveOrg({{ org.id }})">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectOrg({{ org.id }})">Reject</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No pending organizations.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<script>
+function approveOrg(id) {
+  fetch(`/plugins/platform-plus/admin/organizations/${id}/verify`, {method: "POST"})
+    .then(r => r.json())
+    .then(d => { if (d.success) document.getElementById(`org-row-${id}`).remove(); });
+}
+function rejectOrg(id) {
+  if (!confirm("Reject and delete this organization?")) return;
+  fetch(`/plugins/platform-plus/admin/organizations/${id}/reject`, {method: "POST"})
+    .then(r => r.json())
+    .then(d => { if (d.success) document.getElementById(`org-row-${id}`).remove(); });
+}
+</script>
+{% endblock %}

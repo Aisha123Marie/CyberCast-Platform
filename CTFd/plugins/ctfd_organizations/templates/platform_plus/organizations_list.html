@@ -6,23 +6,137 @@
 </div>
 <p class="text-muted">Collaboration space for universities, campuses, or cybersecurity communities.</p>
 
+<div class="d-flex flex-wrap align-items-center mb-3" style="gap: 0.5rem;">
+  <input
+    type="text"
+    id="orgSearchInput"
+    class="form-control"
+    style="max-width: 320px;"
+    placeholder="Search organizations by name..."
+  >
+
+  <div class="btn-group" role="group" aria-label="Organization type filter" id="orgTypeFilterGroup">
+    <button type="button" class="btn btn-outline-primary org-filter-btn active" data-filter="all">All</button>
+    <button type="button" class="btn btn-outline-primary org-filter-btn" data-filter="university">University</button>
+    <button type="button" class="btn btn-outline-primary org-filter-btn" data-filter="company">Company</button>
+    <button type="button" class="btn btn-outline-primary org-filter-btn" data-filter="community">Community</button>
+  </div>
+</div>
+
 <div class="row">
-  {% for org in organizations %}
-  <div class="col-md-4 mb-3">
-    <div class="card h-100">
+  <div class="col-lg-9">
+    <div class="row" id="orgCardGrid">
+      {% for org in organizations %}
+      {% set stats = org_stats.get(org.id, {"members": 0, "teams": 0, "points": 0}) %}
+      <div class="col-md-4 mb-3 org-card-wrapper"
+           data-org-type="{{ org.org_type|lower }}"
+           data-org-name="{{ org.name|lower }}">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ org.name }}
+              {% if org.verified %}<span class="badge badge-success">Verified</span>{% endif %}
+            </h5>
+            <span class="badge badge-secondary text-uppercase">{{ org.org_type }}</span>
+            <p class="card-text mt-2">{{ (org.description or "")[:120] }}{% if org.description and org.description|length > 120 %}...{% endif %}</p>
+
+            <div class="d-flex text-center mb-2" style="gap: 1rem;">
+              <div>
+                <div class="font-weight-bold">{{ stats.teams }}</div>
+                <div class="text-muted small">Teams</div>
+              </div>
+              <div>
+                <div class="font-weight-bold">{{ stats.members }}</div>
+                <div class="text-muted small">Members</div>
+              </div>
+              <div>
+                <div class="font-weight-bold">{{ stats.points }}</div>
+                <div class="text-muted small">Points</div>
+              </div>
+            </div>
+
+            <a href="{{ url_for('organizations.organization_detail', slug=org.slug) }}" class="btn btn-outline-primary btn-sm">View</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <p id="orgEmptyMessage">No organizations registered yet. Be the first!</p>
+      {% endfor %}
+    </div>
+
+    <p id="orgNoResultsMessage" class="text-muted" style="display: none;">
+      No organizations match your search/filter.
+    </p>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="card mb-3">
       <div class="card-body">
-        <h5 class="card-title">
-          {{ org.name }}
-          {% if org.verified %}<span class="badge badge-success">Verified</span>{% endif %}
-        </h5>
-        <span class="badge badge-secondary text-uppercase">{{ org.org_type }}</span>
-        <p class="card-text mt-2">{{ (org.description or "")[:120] }}{% if org.description and org.description|length > 120 %}...{% endif %}</p>
-        <a href="{{ url_for('organizations.organization_detail', slug=org.slug) }}" class="btn btn-outline-primary btn-sm">View</a>
+        <h6 class="card-title text-uppercase text-muted">Top Organizations</h6>
+        {% if top_organizations %}
+        <ol class="pl-3 mb-0">
+          {% for org in top_organizations %}
+          <li class="d-flex justify-content-between">
+            <span>{{ org.name }}</span>
+            <span class="text-muted">{{ org_stats.get(org.id, {"points": 0}).points }}</span>
+          </li>
+          {% endfor %}
+        </ol>
+        {% else %}
+        <p class="text-muted mb-0">No organizations yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h6 class="card-title text-uppercase text-muted">Platform Stats</h6>
+        <div class="d-flex justify-content-between">
+          <span>Organizations</span>
+          <span class="text-muted">{{ platform_stats.organizations }}</span>
+        </div>
       </div>
     </div>
   </div>
-  {% else %}
-  <p>No organizations registered yet. Be the first!</p>
-  {% endfor %}
 </div>
+
+<script>
+(function () {
+  var searchInput = document.getElementById("orgSearchInput");
+  var filterButtons = document.querySelectorAll(".org-filter-btn");
+  var cards = document.querySelectorAll(".org-card-wrapper");
+  var noResultsMessage = document.getElementById("orgNoResultsMessage");
+
+  var currentFilter = "all";
+
+  function applyFilters() {
+    var query = searchInput.value.trim().toLowerCase();
+    var visibleCount = 0;
+
+    cards.forEach(function (card) {
+      var matchesType = currentFilter === "all" || card.dataset.orgType === currentFilter;
+      var matchesSearch = query === "" || card.dataset.orgName.indexOf(query) !== -1;
+      var shouldShow = matchesType && matchesSearch;
+
+      card.style.display = shouldShow ? "" : "none";
+      if (shouldShow) visibleCount++;
+    });
+
+    noResultsMessage.style.display = visibleCount === 0 ? "" : "none";
+  }
+
+  filterButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      filterButtons.forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  searchInput.addEventListener("input", applyFilters);
+
+  applyFilters();
+})();
+</script>
 {% endblock %}

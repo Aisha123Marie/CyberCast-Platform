@@ -43,7 +43,7 @@ class OrganizationMembers(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
     role = db.Column(db.String(32), default="member")  # owner | admin | member
     joined_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-
+    status = db.Column(db.String(32), default="pending")  # pending | approved | rejected
     __table_args__ = (
         db.UniqueConstraint("organization_id", "user_id", name="uq_org_user"),
     )
