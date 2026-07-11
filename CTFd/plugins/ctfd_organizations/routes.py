@@ -174,4 +174,6 @@ def organization_reject(org_id):
     OrganizationMembers.query.filter_by(organization_id=org.id).delete()
     db.session.delete(org)
     db.session.commit()
+
+    return jsonify({"success": True})
     return jsonify({"success": True})
